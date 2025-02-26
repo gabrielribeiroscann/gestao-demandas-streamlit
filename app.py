@@ -11,29 +11,70 @@ def apply_custom_css():
     st.markdown(
         """
         <style>
+        /* General styling */
         .stApp {
-            background-color: #f0f2f6;
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #2c3e50;
         }
         .stButton>button {
-            color: #ffffff;
             background-color: #4CAF50;
+            color: white;
             border-radius: 5px;
             padding: 10px 20px;
             font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .stButton>button:hover {
+            background-color: #45a049;
         }
         .stTextInput>div>div>input, .stTextArea>div>div>textarea {
             border-radius: 5px;
             padding: 10px;
+            border: 1px solid #ced4da;
         }
         .stSelectbox>div>div>select {
             border-radius: 5px;
             padding: 10px;
+            border: 1px solid #ced4da;
         }
-        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-            color: #2e2e2e;
+        /* Card styling for demands */
+        .demand-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .stMarkdown p {
-            color: #4a4a4a;
+        .demand-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        .demand-card h4 {
+            margin-top: 0;
+            color: #34495e;
+        }
+        .demand-card p {
+            margin: 5px 0;
+            color: #7f8c8d;
+        }
+        /* Sidebar styling */
+        .sidebar .sidebar-content {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+        }
+        .sidebar .sidebar-content h2 {
+            color: white;
+        }
+        .sidebar .sidebar-content .stRadio>div {
+            color: white;
+        }
+        .sidebar .sidebar-content .stCheckbox>div {
+            color: white;
         }
         </style>
         """,
@@ -72,14 +113,15 @@ if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = False
 
 # Sidebar for navigation and settings
-st.sidebar.title("Gerenciamento de Demandas - 806")
-menu = st.sidebar.radio(
-    "Menu",
-    ["Página Inicial", "Criar Demanda", "Gerenciar Clientes", "Gerenciar Membros da Equipe", "Exportar Dados"]
-)
-st.sidebar.write("---")
-st.sidebar.write("Configurações")
-st.session_state.dark_mode = st.sidebar.checkbox("Modo Escuro", st.session_state.dark_mode)
+with st.sidebar:
+    st.title("Gerenciamento de Demandas - 806")
+    menu = st.radio(
+        "Menu",
+        ["Página Inicial", "Criar Demanda", "Gerenciar Clientes", "Gerenciar Membros da Equipe", "Exportar Dados"]
+    )
+    st.write("---")
+    st.write("Configurações")
+    st.session_state.dark_mode = st.checkbox("Modo Escuro", st.session_state.dark_mode)
 
 # Apply dark mode
 if st.session_state.dark_mode:
@@ -90,18 +132,14 @@ if st.session_state.dark_mode:
             background-color: #1e1e1e;
             color: #ffffff;
         }
-        .stButton>button {
-            color: #ffffff;
-            background-color: #4CAF50;
-        }
-        .stTextInput>div>div>input, .stTextArea>div>div>textarea {
-            color: #ffffff;
+        .demand-card {
             background-color: #2e2e2e;
-        }
-        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
             color: #ffffff;
         }
-        .stMarkdown p {
+        .demand-card h4 {
+            color: #ffffff;
+        }
+        .demand-card p {
             color: #e0e0e0;
         }
         </style>
@@ -121,9 +159,13 @@ if menu == "Página Inicial":
 
     # Filters
     st.write("#### Filtros")
-    filter_status = st.selectbox("Filtrar por Status", ["Todos", "Não Iniciada", "Em Progresso", "Concluída"])
-    filter_priority = st.selectbox("Filtrar por Prioridade", ["Todos", "Baixa", "Média", "Alta"])
-    filter_team_member = st.selectbox("Filtrar por Membro da Equipe", ["Todos"] + st.session_state.team_members)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        filter_status = st.selectbox("Filtrar por Status", ["Todos", "Não Iniciada", "Em Progresso", "Concluída"])
+    with col2:
+        filter_priority = st.selectbox("Filtrar por Prioridade", ["Todos", "Baixa", "Média", "Alta"])
+    with col3:
+        filter_team_member = st.selectbox("Filtrar por Membro da Equipe", ["Todos"] + st.session_state.team_members)
 
     # Filter demands
     filtered_demands = st.session_state.demands
@@ -141,24 +183,31 @@ if menu == "Página Inicial":
         st.write("Nenhuma demanda encontrada.")
     else:
         for idx, demand in enumerate(sorted_demands):
-            st.write(f"#### Demanda {idx + 1}")
-            st.write(f"**Membro da Equipe:** {demand['team_member']}")
-            st.write(f"**Cliente:** {demand['client']}")
-            st.write(f"**Descrição:** {demand['description']}")
-            st.write(f"**Prioridade:** {demand['priority']}")
-            st.write(f"**Status:** {demand['status']}")
-
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button(f"Editar Demanda {idx + 1}", key=f"edit_{idx}"):
-                    st.session_state.edit_idx = st.session_state.demands.index(demand)
-                    st.experimental_rerun()
-            with col2:
-                if st.button(f"Excluir Demanda {idx + 1}", key=f"delete_{idx}"):
-                    st.session_state.demands.remove(demand)
-                    st.session_state.data["demands"] = st.session_state.demands
-                    save_data(st.session_state.data)
-                    st.experimental_rerun()
+            with st.container():
+                st.markdown(
+                    f"""
+                    <div class="demand-card">
+                        <h4>Demanda {idx + 1}</h4>
+                        <p><strong>Membro da Equipe:</strong> {demand['team_member']}</p>
+                        <p><strong>Cliente:</strong> {demand['client']}</p>
+                        <p><strong>Descrição:</strong> {demand['description']}</p>
+                        <p><strong>Prioridade:</strong> {demand['priority']}</p>
+                        <p><strong>Status:</strong> {demand['status']}</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button(f"Editar Demanda {idx + 1}", key=f"edit_{idx}"):
+                        st.session_state.edit_idx = st.session_state.demands.index(demand)
+                        st.experimental_rerun()
+                with col2:
+                    if st.button(f"Excluir Demanda {idx + 1}", key=f"delete_{idx}"):
+                        st.session_state.demands.remove(demand)
+                        st.session_state.data["demands"] = st.session_state.demands
+                        save_data(st.session_state.data)
+                        st.experimental_rerun()
 
 # Create Demand Page
 elif menu == "Criar Demanda":
