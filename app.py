@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import os
 
 # Nome do arquivo CSV para armazenar as demandas
 FILE_NAME = "demandas.csv"
@@ -7,9 +8,11 @@ FILE_NAME = "demandas.csv"
 # Função para carregar os dados do CSV (ou criar um novo DataFrame)
 @st.cache_data
 def load_data():
-    try:
+    # Verificar se o arquivo existe
+    if os.path.exists(FILE_NAME):
         return pd.read_csv(FILE_NAME)
-    except FileNotFoundError:
+    else:
+        # Se o arquivo não existir, cria um DataFrame vazio com as colunas
         return pd.DataFrame(columns=["Cliente", "Demanda", "Prioridade", "Status", "Responsável"])
 
 # Função para salvar os dados no CSV
@@ -64,15 +67,14 @@ with st.sidebar.form("nova_demanda"):
 if submitted and cliente and demanda and responsavel:
     novo_registro = pd.DataFrame([[cliente, demanda, prioridade, status, responsavel]], columns=df.columns)
     df = pd.concat([df, novo_registro], ignore_index=True)
-    save_data(df)
+    save_data(df)  # Salva os dados no arquivo CSV
     st.success("Demanda adicionada com sucesso!")
 
 # Atualização em tempo real da demanda com edição de tabela
 st.sidebar.subheader("Editar Demandas")
 if not df.empty:
     edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
-    save_data(edited_df)
+    save_data(edited_df)  # Salva as edições no CSV
 else:
     st.info("Nenhuma demanda cadastrada ainda.")
-
 
