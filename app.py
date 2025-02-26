@@ -11,86 +11,91 @@ if 'team_members' not in st.session_state:
     st.session_state.team_members = []
 
 # Sidebar for navigation
-st.sidebar.title("Demand Management - 806")
+st.sidebar.title("Gerenciamento de Demandas - 806")
 menu = st.sidebar.radio(
     "Menu",
-    ["Home", "Create Demand", "Manage Clients", "Manage Team Members"]
+    ["Página Inicial", "Criar Demanda", "Gerenciar Clientes", "Gerenciar Membros da Equipe"]
 )
 
 # Home Page
-if menu == "Home":
-    st.title("Demand Management - 806")
-    st.write("### All Demands")
+if menu == "Página Inicial":
+    st.title("Gerenciamento de Demandas - 806")
+    st.write("### Todas as Demandas")
 
     if not st.session_state.demands:
-        st.write("No demands found.")
+        st.write("Nenhuma demanda encontrada.")
     else:
         for idx, demand in enumerate(st.session_state.demands):
-            st.write(f"#### Demand {idx + 1}")
-            st.write(f"**Team Member:** {demand['team_member']}")
-            st.write(f"**Client:** {demand['client']}")
-            st.write(f"**Description:** {demand['description']}")
-            st.write(f"**Priority:** {demand['priority']}")
+            st.write(f"#### Demanda {idx + 1}")
+            st.write(f"**Membro da Equipe:** {demand['team_member']}")
+            st.write(f"**Cliente:** {demand['client']}")
+            st.write(f"**Descrição:** {demand['description']}")
+            st.write(f"**Prioridade:** {demand['priority']}")
             st.write(f"**Status:** {demand['status']}")
 
-            if st.button(f"Edit Demand {idx + 1}", key=f"edit_{idx}"):
-                st.session_state.edit_idx = idx
-                st.experimental_rerun()
-
-            if st.button(f"Delete Demand {idx + 1}", key=f"delete_{idx}"):
-                st.session_state.demands.pop(idx)
-                st.experimental_rerun()
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(f"Editar Demanda {idx + 1}", key=f"edit_{idx}"):
+                    st.session_state.edit_idx = idx
+                    st.experimental_rerun()
+            with col2:
+                if st.button(f"Excluir Demanda {idx + 1}", key=f"delete_{idx}"):
+                    st.session_state.demands.pop(idx)
+                    st.experimental_rerun()
 
 # Create Demand Page
-elif menu == "Create Demand":
-    st.title("Create Demand")
+elif menu == "Criar Demanda":
+    st.title("Criar Demanda")
 
-    team_member = st.selectbox("Team Member", st.session_state.team_members)
-    client = st.selectbox("Client", st.session_state.clients)
-    description = st.text_area("Description")
-    priority = st.selectbox("Priority", ["Low", "Medium", "High"])
-    status = st.selectbox("Status", ["Not Started", "In Progress", "Completed"])
+    team_member = st.selectbox("Membro da Equipe", st.session_state.team_members)
+    client = st.selectbox("Cliente", st.session_state.clients)
+    description = st.text_area("Descrição")
+    priority = st.selectbox("Prioridade", ["Baixa", "Média", "Alta"])
+    status = st.selectbox("Status", ["Não Iniciada", "Em Progresso", "Concluída"])
 
-    if st.button("Create Demand"):
-        demand = {
-            "team_member": team_member,
-            "client": client,
-            "description": description,
-            "priority": priority,
-            "status": status
-        }
-        st.session_state.demands.append(demand)
-        st.success("Demand created successfully!")
+    if st.button("Criar Demanda"):
+        if not description:
+            st.error("A descrição não pode estar vazia.")
+        else:
+            demand = {
+                "team_member": team_member,
+                "client": client,
+                "description": description,
+                "priority": priority,
+                "status": status
+            }
+            st.session_state.demands.append(demand)
+            st.success("Demanda criada com sucesso!")
 
 # Edit Demand Page
 if hasattr(st.session_state, 'edit_idx'):
-    st.title("Edit Demand")
+    st.title("Editar Demanda")
     idx = st.session_state.edit_idx
     demand = st.session_state.demands[idx]
 
     team_member = st.selectbox(
-        "Team Member",
+        "Membro da Equipe",
         st.session_state.team_members,
         index=st.session_state.team_members.index(demand['team_member'])
     )
     client = st.selectbox(
-        "Client",
+        "Cliente",
         st.session_state.clients,
         index=st.session_state.clients.index(demand['client'])
     )
-    description = st.text_area("Description", value=demand['description'])
+    description = st.text_area("Descrição", value=demand['description'])
     priority = st.selectbox(
-        "Priority",
-        ["Low", "Medium", "High"],
-        index=["Low", "Medium", "High"].index(demand['priority'])
+        "Prioridade",
+        ["Baixa", "Média", "Alta"],
+        index=["Baixa", "Média", "Alta"].index(demand['priority'])
     )
     status = st.selectbox(
         "Status",
-        ["Not Started", "In Progress", "Completed"],
-        index=["Not Started", "In Progress", "Completed"].index(demand['status'])
+        ["Não Iniciada", "Em Progresso", "Concluída"],
+        index=["Não Iniciada", "Em Progresso", "Concluída"].index(demand['status'])
     )
 
-    if st.button("Save Changes"):
+    if st.button("Salvar Alterações"):
         st.session_state.demands[idx] = {
             "team_member": team_member,
             "client": client,
@@ -102,39 +107,39 @@ if hasattr(st.session_state, 'edit_idx'):
         st.experimental_rerun()
 
 # Manage Clients Page
-elif menu == "Manage Clients":
-    st.title("Manage Clients")
+elif menu == "Gerenciar Clientes":
+    st.title("Gerenciar Clientes")
 
-    new_client = st.text_input("Add New Client")
-    if st.button("Add Client"):
+    new_client = st.text_input("Adicionar Novo Cliente")
+    if st.button("Adicionar Cliente"):
         if new_client:
             st.session_state.clients.append(new_client)
-            st.success(f"Client '{new_client}' added successfully!")
+            st.success(f"Cliente '{new_client}' adicionado com sucesso!")
         else:
-            st.error("Client name cannot be empty.")
+            st.error("O nome do cliente não pode estar vazio.")
 
-    st.write("### Client List")
+    st.write("### Lista de Clientes")
     if not st.session_state.clients:
-        st.write("No clients found.")
+        st.write("Nenhum cliente encontrado.")
     else:
         for client in st.session_state.clients:
             st.write(client)
 
 # Manage Team Members Page
-elif menu == "Manage Team Members":
-    st.title("Manage Team Members")
+elif menu == "Gerenciar Membros da Equipe":
+    st.title("Gerenciar Membros da Equipe")
 
-    new_member = st.text_input("Add New Team Member")
-    if st.button("Add Team Member"):
+    new_member = st.text_input("Adicionar Novo Membro da Equipe")
+    if st.button("Adicionar Membro da Equipe"):
         if new_member:
             st.session_state.team_members.append(new_member)
-            st.success(f"Team member '{new_member}' added successfully!")
+            st.success(f"Membro da equipe '{new_member}' adicionado com sucesso!")
         else:
-            st.error("Team member name cannot be empty.")
+            st.error("O nome do membro da equipe não pode estar vazio.")
 
-    st.write("### Team Member List")
+    st.write("### Lista de Membros da Equipe")
     if not st.session_state.team_members:
-        st.write("No team members found.")
+        st.write("Nenhum membro da equipe encontrado.")
     else:
         for member in st.session_state.team_members:
             st.write(member)
