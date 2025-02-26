@@ -51,40 +51,15 @@ if 'team_members' not in st.session_state:
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = False
 
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-
-# Simulated user authentication
-def login():
-    st.session_state.logged_in = True
-
-def logout():
-    st.session_state.logged_in = False
-
 # Sidebar for navigation and settings
 st.sidebar.title("Gerenciamento de Demandas - 806")
-if not st.session_state.logged_in:
-    st.sidebar.write("Faça login para continuar")
-    username = st.sidebar.text_input("Usuário")
-    password = st.sidebar.text_input("Senha", type="password")
-    if st.sidebar.button("Login"):
-        if username == "admin" and password == "admin":  # Simulated credentials
-            login()
-        else:
-            st.sidebar.error("Credenciais inválidas")
-else:
-    st.sidebar.write(f"Bem-vindo, **admin**")
-    if st.sidebar.button("Logout"):
-        logout()
-
-if st.session_state.logged_in:
-    menu = st.sidebar.radio(
-        "Menu",
-        ["Página Inicial", "Criar Demanda", "Gerenciar Clientes", "Gerenciar Membros da Equipe", "Exportar Dados"]
-    )
-    st.sidebar.write("---")
-    st.sidebar.write("Configurações")
-    st.session_state.dark_mode = st.sidebar.checkbox("Modo Escuro", st.session_state.dark_mode)
+menu = st.sidebar.radio(
+    "Menu",
+    ["Página Inicial", "Criar Demanda", "Gerenciar Clientes", "Gerenciar Membros da Equipe", "Exportar Dados"]
+)
+st.sidebar.write("---")
+st.sidebar.write("Configurações")
+st.session_state.dark_mode = st.sidebar.checkbox("Modo Escuro", st.session_state.dark_mode)
 
 # Apply dark mode
 if st.session_state.dark_mode:
@@ -115,7 +90,7 @@ if st.session_state.dark_mode:
     )
 
 # Home Page
-if st.session_state.logged_in and menu == "Página Inicial":
+if menu == "Página Inicial":
     st.title("Gerenciamento de Demandas - 806")
     st.write("### Todas as Demandas")
 
@@ -155,7 +130,7 @@ if st.session_state.logged_in and menu == "Página Inicial":
                     st.experimental_rerun()
 
 # Create Demand Page
-elif st.session_state.logged_in and menu == "Criar Demanda":
+elif menu == "Criar Demanda":
     st.title("Criar Demanda")
 
     team_member = st.selectbox("Membro da Equipe", st.session_state.team_members)
@@ -220,7 +195,7 @@ if hasattr(st.session_state, 'edit_idx'):
         st.experimental_rerun()
 
 # Manage Clients Page
-elif st.session_state.logged_in and menu == "Gerenciar Clientes":
+elif menu == "Gerenciar Clientes":
     st.title("Gerenciar Clientes")
 
     new_client = st.text_input("Adicionar Novo Cliente")
@@ -239,7 +214,7 @@ elif st.session_state.logged_in and menu == "Gerenciar Clientes":
             st.write(client)
 
 # Manage Team Members Page
-elif st.session_state.logged_in and menu == "Gerenciar Membros da Equipe":
+elif menu == "Gerenciar Membros da Equipe":
     st.title("Gerenciar Membros da Equipe")
 
     new_member = st.text_input("Adicionar Novo Membro da Equipe")
@@ -258,7 +233,7 @@ elif st.session_state.logged_in and menu == "Gerenciar Membros da Equipe":
             st.write(member)
 
 # Export Data Page
-elif st.session_state.logged_in and menu == "Exportar Dados":
+elif menu == "Exportar Dados":
     st.title("Exportar Dados")
 
     if st.session_state.demands:
