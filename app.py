@@ -89,6 +89,11 @@ if st.session_state.dark_mode:
         unsafe_allow_html=True
     )
 
+# Function to sort demands by priority
+def sort_demands_by_priority(demands):
+    priority_order = {"Alta": 1, "Média": 2, "Baixa": 3}
+    return sorted(demands, key=lambda x: priority_order[x['priority']])
+
 # Home Page
 if menu == "Página Inicial":
     st.title("Gerenciamento de Demandas - 806")
@@ -100,6 +105,7 @@ if menu == "Página Inicial":
     filter_priority = st.selectbox("Filtrar por Prioridade", ["Todos", "Baixa", "Média", "Alta"])
     filter_team_member = st.selectbox("Filtrar por Membro da Equipe", ["Todos"] + st.session_state.team_members)
 
+    # Filter demands
     filtered_demands = st.session_state.demands
     if filter_status != "Todos":
         filtered_demands = [d for d in filtered_demands if d['status'] == filter_status]
@@ -108,10 +114,13 @@ if menu == "Página Inicial":
     if filter_team_member != "Todos":
         filtered_demands = [d for d in filtered_demands if d['team_member'] == filter_team_member]
 
-    if not filtered_demands:
+    # Sort demands by priority
+    sorted_demands = sort_demands_by_priority(filtered_demands)
+
+    if not sorted_demands:
         st.write("Nenhuma demanda encontrada.")
     else:
-        for idx, demand in enumerate(filtered_demands):
+        for idx, demand in enumerate(sorted_demands):
             st.write(f"#### Demanda {idx + 1}")
             st.write(f"**Membro da Equipe:** {demand['team_member']}")
             st.write(f"**Cliente:** {demand['client']}")
@@ -122,11 +131,11 @@ if menu == "Página Inicial":
             col1, col2 = st.columns(2)
             with col1:
                 if st.button(f"Editar Demanda {idx + 1}", key=f"edit_{idx}"):
-                    st.session_state.edit_idx = idx
+                    st.session_state.edit_idx = st.session_state.demands.index(demand)
                     st.experimental_rerun()
             with col2:
                 if st.button(f"Excluir Demanda {idx + 1}", key=f"delete_{idx}"):
-                    st.session_state.demands.pop(idx)
+                    st.session_state.demands.remove(demand)
                     st.experimental_rerun()
 
 # Create Demand Page
@@ -136,7 +145,7 @@ elif menu == "Criar Demanda":
     team_member = st.selectbox("Membro da Equipe", st.session_state.team_members)
     client = st.selectbox("Cliente", st.session_state.clients)
     description = st.text_area("Descrição")
-    priority = st.selectbox("Prioridade", ["Baixa", "Média", "Alta"])
+    priority = st.selectbox("Prioridade", ["Alta", "Média", "Baixa"])
     status = st.selectbox("Status", ["Não Iniciada", "Em Progresso", "Concluída"])
 
     if st.button("Criar Demanda"):
@@ -174,8 +183,8 @@ if hasattr(st.session_state, 'edit_idx'):
     description = st.text_area("Descrição", value=demand['description'])
     priority = st.selectbox(
         "Prioridade",
-        ["Baixa", "Média", "Alta"],
-        index=["Baixa", "Média", "Alta"].index(demand['priority'])
+        ["Alta", "Média", "Baixa"],
+        index=["Alta", "Média", "Baixa"].index(demand['priority'])
     )
     status = st.selectbox(
         "Status",
