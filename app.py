@@ -66,7 +66,6 @@ if submitted and cliente and demanda and responsavel:
     df = pd.concat([df, novo_registro], ignore_index=True)
     save_data(df)
     st.success("Demanda adicionada com sucesso!")
-    st.experimental_rerun()
 
 # Atualização em tempo real da demanda com edição de tabela
 st.sidebar.subheader("Editar Demandas")
@@ -75,4 +74,5 @@ if not df.empty:
     save_data(edited_df)
 else:
     st.info("Nenhuma demanda cadastrada ainda.")
+
 
