@@ -206,6 +206,7 @@ if menu == "Página Inicial":
                         st.session_state.demands.pop(idx)
                         st.session_state.data["demands"] = st.session_state.demands
                         save_data(st.session_state.data)
+                        st.success("Demanda excluída com sucesso!")
                         st.experimental_rerun()
 
 # Edit Demand Page
@@ -247,6 +248,7 @@ if hasattr(st.session_state, 'edit_idx'):
         st.session_state.data["demands"] = st.session_state.demands
         save_data(st.session_state.data)
         del st.session_state.edit_idx
+        st.success("Demanda atualizada com sucesso!")
         st.experimental_rerun()
 
 # Create Demand Page
