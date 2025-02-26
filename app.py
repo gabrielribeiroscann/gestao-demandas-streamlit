@@ -200,42 +200,13 @@ if menu == "Página Inicial":
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button(f"Editar Demanda {idx + 1}", key=f"edit_{idx}"):
-                        st.session_state.edit_idx = st.session_state.demands.index(demand)
-                        st.experimental_rerun()
+                        st.session_state.edit_idx = idx
                 with col2:
                     if st.button(f"Excluir Demanda {idx + 1}", key=f"delete_{idx}"):
-                        st.session_state.demands.remove(demand)
+                        st.session_state.demands.pop(idx)
                         st.session_state.data["demands"] = st.session_state.demands
                         save_data(st.session_state.data)
                         st.experimental_rerun()
-
-# Create Demand Page
-elif menu == "Criar Demanda":
-    st.title("Criar Demanda")
-
-    team_member = st.selectbox("Membro da Equipe", st.session_state.team_members)
-    client = st.selectbox("Cliente", st.session_state.clients)
-    description = st.text_area("Descrição")
-    priority = st.selectbox("Prioridade", ["Alta", "Média", "Baixa"])
-    status = st.selectbox("Status", ["Não Iniciada", "Em Progresso", "Concluída"])
-
-    if st.button("Criar Demanda"):
-        if not description:
-            st.error("A descrição não pode estar vazia.")
-        else:
-            demand = {
-                "team_member": team_member,
-                "client": client,
-                "description": description,
-                "priority": priority,
-                "status": status
-            }
-            st.session_state.demands.append(demand)
-            st.session_state.data["demands"] = st.session_state.demands
-            save_data(st.session_state.data)
-            st.success("Demanda criada com sucesso!")
-            if priority == "Alta":
-                st.warning("Notificação: Demanda de alta prioridade criada!")
 
 # Edit Demand Page
 if hasattr(st.session_state, 'edit_idx'):
@@ -277,6 +248,34 @@ if hasattr(st.session_state, 'edit_idx'):
         save_data(st.session_state.data)
         del st.session_state.edit_idx
         st.experimental_rerun()
+
+# Create Demand Page
+elif menu == "Criar Demanda":
+    st.title("Criar Demanda")
+
+    team_member = st.selectbox("Membro da Equipe", st.session_state.team_members)
+    client = st.selectbox("Cliente", st.session_state.clients)
+    description = st.text_area("Descrição")
+    priority = st.selectbox("Prioridade", ["Alta", "Média", "Baixa"])
+    status = st.selectbox("Status", ["Não Iniciada", "Em Progresso", "Concluída"])
+
+    if st.button("Criar Demanda"):
+        if not description:
+            st.error("A descrição não pode estar vazia.")
+        else:
+            demand = {
+                "team_member": team_member,
+                "client": client,
+                "description": description,
+                "priority": priority,
+                "status": status
+            }
+            st.session_state.demands.append(demand)
+            st.session_state.data["demands"] = st.session_state.demands
+            save_data(st.session_state.data)
+            st.success("Demanda criada com sucesso!")
+            if priority == "Alta":
+                st.warning("Notificação: Demanda de alta prioridade criada!")
 
 # Manage Clients Page
 elif menu == "Gerenciar Clientes":
