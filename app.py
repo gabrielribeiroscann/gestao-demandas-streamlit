@@ -1,6 +1,26 @@
 import streamlit as st
+import pandas as pd
+import base64
 
-# Initialize session state to store data
+# Custom CSS for background and styling
+def set_background(image_file):
+    with open(image_file, "rb") as f:
+        img_data = f.read()
+    b64_encoded = base64.b64encode(img_data).decode()
+    style = f"""
+        <style>
+        .stApp {{
+            background-image: url(data:image/png;base64,{b64_encoded});
+            background-size: cover;
+        }}
+        </style>
+    """
+    st.markdown(style, unsafe_allow_html=True)
+
+# Set background image
+set_background("background.jpg")  # Replace with your image file path
+
+# Initialize session state
 if 'demands' not in st.session_state:
     st.session_state.demands = []
 
@@ -10,22 +30,89 @@ if 'clients' not in st.session_state:
 if 'team_members' not in st.session_state:
     st.session_state.team_members = []
 
-# Sidebar for navigation
+if 'dark_mode' not in st.session_state:
+    st.session_state.dark_mode = False
+
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+
+# Simulated user authentication
+def login():
+    st.session_state.logged_in = True
+
+def logout():
+    st.session_state.logged_in = False
+
+# Sidebar for navigation and settings
 st.sidebar.title("Gerenciamento de Demandas - 806")
-menu = st.sidebar.radio(
-    "Menu",
-    ["Página Inicial", "Criar Demanda", "Gerenciar Clientes", "Gerenciar Membros da Equipe"]
-)
+if not st.session_state.logged_in:
+    st.sidebar.write("Faça login para continuar")
+    username = st.sidebar.text_input("Usuário")
+    password = st.sidebar.text_input("Senha", type="password")
+    if st.sidebar.button("Login"):
+        if username == "admin" and password == "admin":  # Simulated credentials
+            login()
+        else:
+            st.sidebar.error("Credenciais inválidas")
+else:
+    st.sidebar.write(f"Bem-vindo, **admin**")
+    if st.sidebar.button("Logout"):
+        logout()
+
+if st.session_state.logged_in:
+    menu = st.sidebar.radio(
+        "Menu",
+        ["Página Inicial", "Criar Demanda", "Gerenciar Clientes", "Gerenciar Membros da Equipe", "Exportar Dados"]
+    )
+    st.sidebar.write("---")
+    st.sidebar.write("Configurações")
+    st.session_state.dark_mode = st.sidebar.checkbox("Modo Escuro", st.session_state.dark_mode)
+
+# Apply dark mode
+if st.session_state.dark_mode:
+    st.markdown(
+        """
+        <style>
+        .stApp {{
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }}
+        .stButton>button {{
+            color: #ffffff;
+            background-color: #4CAF50;
+        }}
+        .stTextInput>div>div>input, .stTextArea>div>div>textarea {{
+            color: #ffffff;
+            background-color: #2e2e2e;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
 # Home Page
-if menu == "Página Inicial":
+if st.session_state.logged_in and menu == "Página Inicial":
     st.title("Gerenciamento de Demandas - 806")
     st.write("### Todas as Demandas")
 
-    if not st.session_state.demands:
+    # Filters
+    st.write("#### Filtros")
+    filter_status = st.selectbox("Filtrar por Status", ["Todos", "Não Iniciada", "Em Progresso", "Concluída"])
+    filter_priority = st.selectbox("Filtrar por Prioridade", ["Todos", "Baixa", "Média", "Alta"])
+    filter_team_member = st.selectbox("Filtrar por Membro da Equipe", ["Todos"] + st.session_state.team_members)
+
+    filtered_demands = st.session_state.demands
+    if filter_status != "Todos":
+        filtered_demands = [d for d in filtered_demands if d['status'] == filter_status]
+    if filter_priority != "Todos":
+        filtered_demands = [d for d in filtered_demands if d['priority'] == filter_priority]
+    if filter_team_member != "Todos":
+        filtered_demands = [d for d in filtered_demands if d['team_member'] == filter_team_member]
+
+    if not filtered_demands:
         st.write("Nenhuma demanda encontrada.")
     else:
-        for idx, demand in enumerate(st.session_state.demands):
+        for idx, demand in enumerate(filtered_demands):
             st.write(f"#### Demanda {idx + 1}")
             st.write(f"**Membro da Equipe:** {demand['team_member']}")
             st.write(f"**Cliente:** {demand['client']}")
@@ -44,7 +131,7 @@ if menu == "Página Inicial":
                     st.experimental_rerun()
 
 # Create Demand Page
-elif menu == "Criar Demanda":
+elif st.session_state.logged_in and menu == "Criar Demanda":
     st.title("Criar Demanda")
 
     team_member = st.selectbox("Membro da Equipe", st.session_state.team_members)
@@ -66,6 +153,8 @@ elif menu == "Criar Demanda":
             }
             st.session_state.demands.append(demand)
             st.success("Demanda criada com sucesso!")
+            if priority == "Alta":
+                st.warning("Notificação: Demanda de alta prioridade criada!")
 
 # Edit Demand Page
 if hasattr(st.session_state, 'edit_idx'):
@@ -107,7 +196,7 @@ if hasattr(st.session_state, 'edit_idx'):
         st.experimental_rerun()
 
 # Manage Clients Page
-elif menu == "Gerenciar Clientes":
+elif st.session_state.logged_in and menu == "Gerenciar Clientes":
     st.title("Gerenciar Clientes")
 
     new_client = st.text_input("Adicionar Novo Cliente")
@@ -126,7 +215,7 @@ elif menu == "Gerenciar Clientes":
             st.write(client)
 
 # Manage Team Members Page
-elif menu == "Gerenciar Membros da Equipe":
+elif st.session_state.logged_in and menu == "Gerenciar Membros da Equipe":
     st.title("Gerenciar Membros da Equipe")
 
     new_member = st.text_input("Adicionar Novo Membro da Equipe")
@@ -143,3 +232,22 @@ elif menu == "Gerenciar Membros da Equipe":
     else:
         for member in st.session_state.team_members:
             st.write(member)
+
+# Export Data Page
+elif st.session_state.logged_in and menu == "Exportar Dados":
+    st.title("Exportar Dados")
+
+    if st.session_state.demands:
+        df = pd.DataFrame(st.session_state.demands)
+        st.write("### Dados das Demandas")
+        st.write(df)
+
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Exportar para CSV",
+            data=csv,
+            file_name="demandas.csv",
+            mime="text/csv"
+        )
+    else:
+        st.write("Nenhuma demanda para exportar.")
