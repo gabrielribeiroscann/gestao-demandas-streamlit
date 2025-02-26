@@ -70,11 +70,13 @@ if submitted and cliente and demanda and responsavel:
     save_data(df)  # Salva os dados no arquivo CSV
     st.success("Demanda adicionada com sucesso!")
 
-# Atualização em tempo real da demanda com edição de tabela
+# Permite editar as demandas existentes
 st.sidebar.subheader("Editar Demandas")
 if not df.empty:
+    # Exibir a tabela de demandas para edição
     edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
-    save_data(edited_df)  # Salva as edições no CSV
+    if edited_df is not None:  # Verifica se houve alguma edição
+        save_data(edited_df)  # Salva as edições no CSV
+        st.success("Demanda(s) atualizada(s) com sucesso!")
 else:
     st.info("Nenhuma demanda cadastrada ainda.")
-
