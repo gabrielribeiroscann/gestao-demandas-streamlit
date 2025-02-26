@@ -1,24 +1,42 @@
 import streamlit as st
 import pandas as pd
-import base64
 
-# Custom CSS for background and styling
-def set_background(image_file):
-    with open(image_file, "rb") as f:
-        img_data = f.read()
-    b64_encoded = base64.b64encode(img_data).decode()
-    style = f"""
+# Custom CSS for styling
+def apply_custom_css():
+    st.markdown(
+        """
         <style>
-        .stApp {{
-            background-image: url(data:image/png;base64,{b64_encoded});
-            background-size: cover;
-        }}
+        .stApp {
+            background-color: #f0f2f6;
+        }
+        .stButton>button {
+            color: #ffffff;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        .stTextInput>div>div>input, .stTextArea>div>div>textarea {
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .stSelectbox>div>div>select {
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+            color: #2e2e2e;
+        }
+        .stMarkdown p {
+            color: #4a4a4a;
+        }
         </style>
-    """
-    st.markdown(style, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
-# Set background image
-set_background("background.jpg")  # Replace with your image file path
+# Apply custom CSS
+apply_custom_css()
 
 # Initialize session state
 if 'demands' not in st.session_state:
@@ -73,18 +91,24 @@ if st.session_state.dark_mode:
     st.markdown(
         """
         <style>
-        .stApp {{
+        .stApp {
             background-color: #1e1e1e;
             color: #ffffff;
-        }}
-        .stButton>button {{
+        }
+        .stButton>button {
             color: #ffffff;
             background-color: #4CAF50;
-        }}
-        .stTextInput>div>div>input, .stTextArea>div>div>textarea {{
+        }
+        .stTextInput>div>div>input, .stTextArea>div>div>textarea {
             color: #ffffff;
             background-color: #2e2e2e;
-        }}
+        }
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+            color: #ffffff;
+        }
+        .stMarkdown p {
+            color: #e0e0e0;
+        }
         </style>
         """,
         unsafe_allow_html=True
