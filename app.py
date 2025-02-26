@@ -1,5 +1,10 @@
 import streamlit as st
 import pandas as pd
+import json
+import os
+
+# File to store demands, clients, and team members
+DATA_FILE = "data.json"
 
 # Custom CSS for styling
 def apply_custom_css():
@@ -38,15 +43,30 @@ def apply_custom_css():
 # Apply custom CSS
 apply_custom_css()
 
+# Load data from file
+def load_data():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    return {"demands": [], "clients": [], "team_members": []}
+
+# Save data to file
+def save_data(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f)
+
 # Initialize session state
+if 'data' not in st.session_state:
+    st.session_state.data = load_data()
+
 if 'demands' not in st.session_state:
-    st.session_state.demands = []
+    st.session_state.demands = st.session_state.data["demands"]
 
 if 'clients' not in st.session_state:
-    st.session_state.clients = []
+    st.session_state.clients = st.session_state.data["clients"]
 
 if 'team_members' not in st.session_state:
-    st.session_state.team_members = []
+    st.session_state.team_members = st.session_state.data["team_members"]
 
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = False
@@ -136,6 +156,8 @@ if menu == "Página Inicial":
             with col2:
                 if st.button(f"Excluir Demanda {idx + 1}", key=f"delete_{idx}"):
                     st.session_state.demands.remove(demand)
+                    st.session_state.data["demands"] = st.session_state.demands
+                    save_data(st.session_state.data)
                     st.experimental_rerun()
 
 # Create Demand Page
@@ -160,6 +182,8 @@ elif menu == "Criar Demanda":
                 "status": status
             }
             st.session_state.demands.append(demand)
+            st.session_state.data["demands"] = st.session_state.demands
+            save_data(st.session_state.data)
             st.success("Demanda criada com sucesso!")
             if priority == "Alta":
                 st.warning("Notificação: Demanda de alta prioridade criada!")
@@ -200,6 +224,8 @@ if hasattr(st.session_state, 'edit_idx'):
             "priority": priority,
             "status": status
         }
+        st.session_state.data["demands"] = st.session_state.demands
+        save_data(st.session_state.data)
         del st.session_state.edit_idx
         st.experimental_rerun()
 
@@ -211,6 +237,8 @@ elif menu == "Gerenciar Clientes":
     if st.button("Adicionar Cliente"):
         if new_client:
             st.session_state.clients.append(new_client)
+            st.session_state.data["clients"] = st.session_state.clients
+            save_data(st.session_state.data)
             st.success(f"Cliente '{new_client}' adicionado com sucesso!")
         else:
             st.error("O nome do cliente não pode estar vazio.")
@@ -230,6 +258,8 @@ elif menu == "Gerenciar Membros da Equipe":
     if st.button("Adicionar Membro da Equipe"):
         if new_member:
             st.session_state.team_members.append(new_member)
+            st.session_state.data["team_members"] = st.session_state.team_members
+            save_data(st.session_state.data)
             st.success(f"Membro da equipe '{new_member}' adicionado com sucesso!")
         else:
             st.error("O nome do membro da equipe não pode estar vazio.")
