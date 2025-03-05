@@ -1,10 +1,58 @@
 import streamlit as st
 import pandas as pd
-import json
+import sqlite3
 import os
 
-# File to store demands, clients, and team members
-DATA_FILE = "data.json"
+# Nome do arquivo do banco de dados
+DATABASE_FILE = "demands.db"
+
+# Função para conectar ao banco de dados
+def get_db_connection():
+    conn = sqlite3.connect(DATABASE_FILE)
+    conn.row_factory = sqlite3.Row  # Para acessar colunas por nome
+    return conn
+
+# Função para inicializar o banco de dados (cria as tabelas se não existirem)
+def init_db():
+    if not os.path.exists(DATABASE_FILE):
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Tabela de demandas
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS demands (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_member TEXT NOT NULL,
+                client TEXT NOT NULL,
+                description TEXT NOT NULL,
+                priority TEXT NOT NULL,
+                status TEXT NOT NULL
+            )
+            """
+        )
+        # Tabela de clientes
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS clients (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE
+            )
+            """
+        )
+        # Tabela de membros da equipe
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS team_members (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE
+            )
+            """
+        )
+        conn.commit()
+        conn.close()
+
+# Inicializar o banco de dados
+init_db()
 
 # Custom CSS for styling
 def apply_custom_css():
@@ -84,34 +132,6 @@ def apply_custom_css():
 # Apply custom CSS
 apply_custom_css()
 
-# Load data from file
-def load_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    return {"demands": [], "clients": [], "team_members": []}
-
-# Save data to file
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f)
-
-# Initialize session state
-if 'data' not in st.session_state:
-    st.session_state.data = load_data()
-
-if 'demands' not in st.session_state:
-    st.session_state.demands = st.session_state.data["demands"]
-
-if 'clients' not in st.session_state:
-    st.session_state.clients = st.session_state.data["clients"]
-
-if 'team_members' not in st.session_state:
-    st.session_state.team_members = st.session_state.data["team_members"]
-
-if 'dark_mode' not in st.session_state:
-    st.session_state.dark_mode = False
-
 # Sidebar for navigation and settings
 with st.sidebar:
     st.title("Gerenciamento de Demandas - 806")
@@ -121,10 +141,10 @@ with st.sidebar:
     )
     st.write("---")
     st.write("Configurações")
-    st.session_state.dark_mode = st.checkbox("Modo Escuro", st.session_state.dark_mode)
+    dark_mode = st.checkbox("Modo Escuro")
 
 # Apply dark mode
-if st.session_state.dark_mode:
+if dark_mode:
     st.markdown(
         """
         <style>
@@ -157,6 +177,13 @@ if menu == "Página Inicial":
     st.title("Gerenciamento de Demandas - 806")
     st.write("### Todas as Demandas")
 
+    # Carregar demandas do banco de dados
+    conn = get_db_connection()
+    demands = conn.execute("SELECT * FROM demands").fetchall()
+    clients = conn.execute("SELECT * FROM clients").fetchall()
+    team_members = conn.execute("SELECT * FROM team_members").fetchall()
+    conn.close()
+
     # Filters
     st.write("#### Filtros")
     col1, col2, col3 = st.columns(3)
@@ -165,10 +192,10 @@ if menu == "Página Inicial":
     with col2:
         filter_priority = st.selectbox("Filtrar por Prioridade", ["Todos", "Baixa", "Média", "Alta"])
     with col3:
-        filter_team_member = st.selectbox("Filtrar por Membro da Equipe", ["Todos"] + st.session_state.team_members)
+        filter_team_member = st.selectbox("Filtrar por Membro da Equipe", ["Todos"] + [member["name"] for member in team_members])
 
     # Filter demands
-    filtered_demands = st.session_state.demands
+    filtered_demands = demands
     if filter_status != "Todos":
         filtered_demands = [d for d in filtered_demands if d['status'] == filter_status]
     if filter_priority != "Todos":
@@ -203,27 +230,29 @@ if menu == "Página Inicial":
                         st.session_state.edit_idx = idx
                 with col2:
                     if st.button(f"Excluir Demanda {idx + 1}", key=f"delete_{idx}"):
-                        st.session_state.demands.pop(idx)
-                        st.session_state.data["demands"] = st.session_state.demands
-                        save_data(st.session_state.data)
+                        conn = get_db_connection()
+                        conn.execute("DELETE FROM demands WHERE id = ?", (demand["id"],))
+                        conn.commit()
+                        conn.close()
                         st.success("Demanda excluída com sucesso!")
                         st.experimental_rerun()
 
 # Edit Demand Page
 if hasattr(st.session_state, 'edit_idx'):
     st.title("Editar Demanda")
-    idx = st.session_state.edit_idx
-    demand = st.session_state.demands[idx]
+    conn = get_db_connection()
+    demand = conn.execute("SELECT * FROM demands WHERE id = ?", (st.session_state.edit_idx + 1,)).fetchone()
+    conn.close()
 
     team_member = st.selectbox(
         "Membro da Equipe",
-        st.session_state.team_members,
-        index=st.session_state.team_members.index(demand['team_member'])
+        [member["name"] for member in team_members],
+        index=[member["name"] for member in team_members].index(demand['team_member'])
     )
     client = st.selectbox(
         "Cliente",
-        st.session_state.clients,
-        index=st.session_state.clients.index(demand['client'])
+        [client["name"] for client in clients],
+        index=[client["name"] for client in clients].index(demand['client'])
     )
     description = st.text_area("Descrição", value=demand['description'])
     priority = st.selectbox(
@@ -238,15 +267,17 @@ if hasattr(st.session_state, 'edit_idx'):
     )
 
     if st.button("Salvar Alterações"):
-        st.session_state.demands[idx] = {
-            "team_member": team_member,
-            "client": client,
-            "description": description,
-            "priority": priority,
-            "status": status
-        }
-        st.session_state.data["demands"] = st.session_state.demands
-        save_data(st.session_state.data)
+        conn = get_db_connection()
+        conn.execute(
+            """
+            UPDATE demands
+            SET team_member = ?, client = ?, description = ?, priority = ?, status = ?
+            WHERE id = ?
+            """,
+            (team_member, client, description, priority, status, demand["id"]),
+        )
+        conn.commit()
+        conn.close()
         del st.session_state.edit_idx
         st.success("Demanda atualizada com sucesso!")
         st.experimental_rerun()
@@ -255,8 +286,13 @@ if hasattr(st.session_state, 'edit_idx'):
 elif menu == "Criar Demanda":
     st.title("Criar Demanda")
 
-    team_member = st.selectbox("Membro da Equipe", st.session_state.team_members)
-    client = st.selectbox("Cliente", st.session_state.clients)
+    conn = get_db_connection()
+    team_members = conn.execute("SELECT * FROM team_members").fetchall()
+    clients = conn.execute("SELECT * FROM clients").fetchall()
+    conn.close()
+
+    team_member = st.selectbox("Membro da Equipe", [member["name"] for member in team_members])
+    client = st.selectbox("Cliente", [client["name"] for client in clients])
     description = st.text_area("Descrição")
     priority = st.selectbox("Prioridade", ["Alta", "Média", "Baixa"])
     status = st.selectbox("Status", ["Não Iniciada", "Em Progresso", "Concluída"])
@@ -265,16 +301,16 @@ elif menu == "Criar Demanda":
         if not description:
             st.error("A descrição não pode estar vazia.")
         else:
-            demand = {
-                "team_member": team_member,
-                "client": client,
-                "description": description,
-                "priority": priority,
-                "status": status
-            }
-            st.session_state.demands.append(demand)
-            st.session_state.data["demands"] = st.session_state.demands
-            save_data(st.session_state.data)
+            conn = get_db_connection()
+            conn.execute(
+                """
+                INSERT INTO demands (team_member, client, description, priority, status)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (team_member, client, description, priority, status),
+            )
+            conn.commit()
+            conn.close()
             st.success("Demanda criada com sucesso!")
             if priority == "Alta":
                 st.warning("Notificação: Demanda de alta prioridade criada!")
@@ -286,19 +322,24 @@ elif menu == "Gerenciar Clientes":
     new_client = st.text_input("Adicionar Novo Cliente")
     if st.button("Adicionar Cliente"):
         if new_client:
-            st.session_state.clients.append(new_client)
-            st.session_state.data["clients"] = st.session_state.clients
-            save_data(st.session_state.data)
+            conn = get_db_connection()
+            conn.execute("INSERT INTO clients (name) VALUES (?)", (new_client,))
+            conn.commit()
+            conn.close()
             st.success(f"Cliente '{new_client}' adicionado com sucesso!")
         else:
             st.error("O nome do cliente não pode estar vazio.")
 
+    conn = get_db_connection()
+    clients = conn.execute("SELECT * FROM clients").fetchall()
+    conn.close()
+
     st.write("### Lista de Clientes")
-    if not st.session_state.clients:
+    if not clients:
         st.write("Nenhum cliente encontrado.")
     else:
-        for client in st.session_state.clients:
-            st.write(client)
+        for client in clients:
+            st.write(client["name"])
 
 # Manage Team Members Page
 elif menu == "Gerenciar Membros da Equipe":
@@ -307,26 +348,35 @@ elif menu == "Gerenciar Membros da Equipe":
     new_member = st.text_input("Adicionar Novo Membro da Equipe")
     if st.button("Adicionar Membro da Equipe"):
         if new_member:
-            st.session_state.team_members.append(new_member)
-            st.session_state.data["team_members"] = st.session_state.team_members
-            save_data(st.session_state.data)
+            conn = get_db_connection()
+            conn.execute("INSERT INTO team_members (name) VALUES (?)", (new_member,))
+            conn.commit()
+            conn.close()
             st.success(f"Membro da equipe '{new_member}' adicionado com sucesso!")
         else:
             st.error("O nome do membro da equipe não pode estar vazio.")
 
+    conn = get_db_connection()
+    team_members = conn.execute("SELECT * FROM team_members").fetchall()
+    conn.close()
+
     st.write("### Lista de Membros da Equipe")
-    if not st.session_state.team_members:
+    if not team_members:
         st.write("Nenhum membro da equipe encontrado.")
     else:
-        for member in st.session_state.team_members:
-            st.write(member)
+        for member in team_members:
+            st.write(member["name"])
 
 # Export Data Page
 elif menu == "Exportar Dados":
     st.title("Exportar Dados")
 
-    if st.session_state.demands:
-        df = pd.DataFrame(st.session_state.demands)
+    conn = get_db_connection()
+    demands = conn.execute("SELECT * FROM demands").fetchall()
+    conn.close()
+
+    if demands:
+        df = pd.DataFrame(demands)
         st.write("### Dados das Demandas")
         st.write(df)
 
